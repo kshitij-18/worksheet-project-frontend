@@ -25,17 +25,17 @@ jobs:
       
       - name: Build Docker Image
         run: |
-          docker build -t asia-south1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/worksheet-project/frontend-service:${{ github.sha }} \
-                       -t asia-south1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/worksheet-project/frontend-service:latest .
+          docker build -t asia-south1-docker.pkg.dev/${{ env.GCP_PROJECT }}/worksheet-project/frontend-service:${{ github.sha }} \
+                       -t asia-south1-docker.pkg.dev/${{ env.GCP_PROJECT }}/worksheet-project/frontend-service:latest .
       
       - name: Push Docker Image to Artifact Registry
         run: |
-          docker push asia-south1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/worksheet-project/frontend-service:${{ github.sha }}
+          docker push asia-south1-docker.pkg.dev/${{ env.GCP_PROJECT }}/worksheet-project/frontend-service:${{ github.sha }}
       
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy frontend-worksheet \
-            --image asia-south1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/worksheet-project/frontend-service:${{ github.sha }} \
+            --image asia-south1-docker.pkg.dev/${{ env.GCP_PROJECT }}/worksheet-project/frontend-service:${{ github.sha }} \
             --platform managed \
             --region asia-south1 \
             --allow-unauthenticated \
