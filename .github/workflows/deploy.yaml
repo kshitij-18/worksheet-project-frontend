@@ -20,6 +20,13 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
       
+      - name: Fetch secrets from Secret Manager
+        id: fetch-secrets
+        uses: google-github-actions/get-secretmanager-secrets@v1
+        with:
+          secrets: |
+            API_URL: projects/${{ env.GCP_PROJECT }}/secrets/API_URL/versions/latest
+      
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker asia-south1-docker.pkg.dev
       
@@ -31,15 +38,19 @@ jobs:
       - name: Push Docker Image to Artifact Registry
         run: |
           docker push asia-south1-docker.pkg.dev/${{ env.GCP_PROJECT }}/worksheet-project/frontend-service:${{ github.sha }}
+          docker push asia-south1-docker.pkg.dev/${{ env.GCP_PROJECT }}/worksheet-project/frontend-service:latest
       
       - name: Deploy to Cloud Run
+        env:
+          VITE_API_URL: ${{ steps.fetch-secrets.outputs.API_URL }}
         run: |
           gcloud run deploy frontend-worksheet \
             --image asia-south1-docker.pkg.dev/${{ env.GCP_PROJECT }}/worksheet-project/frontend-service:${{ github.sha }} \
             --platform managed \
             --region asia-south1 \
             --allow-unauthenticated \
-            --port 80
+            --port 80 \
+            --set-env-vars VITE_API_URL="${{ steps.fetch-secrets.outputs.API_URL }}"
       
       - name: Remove temporary GCP credentials file
         if: always()
