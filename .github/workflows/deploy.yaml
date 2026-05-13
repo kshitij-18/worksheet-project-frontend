@@ -50,7 +50,7 @@ jobs:
             --region asia-south1 \
             --allow-unauthenticated \
             --port 80 \
-            --set-env-vars VITE_API_URL="${{ steps.fetch-secrets.outputs.API_URL }}"
+            --set-env-vars VITE_API_URL="${VITE_API_URL}"
       
       - name: Remove temporary GCP credentials file
         if: always()
