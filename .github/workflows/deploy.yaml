@@ -1,0 +1,54 @@
+name: Build and Deploy Frontend
+
+on: 
+  push: 
+    branches: [develop]
+
+jobs: 
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps: 
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: gcp-auth
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+      
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker asia-south1-docker.pkg.dev
+      
+      - name: Build Docker Image
+        run: |
+          docker build -t asia-south1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/worksheet-project/frontend-service:${{ github.sha }} \
+                       -t asia-south1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/worksheet-project/frontend-service:latest .
+      
+      - name: Push Docker Image to Artifact Registry
+        run: |
+          docker push asia-south1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/worksheet-project/frontend-service:${{ github.sha }}
+      
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy frontend-worksheet \
+            --image asia-south1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/worksheet-project/frontend-service:${{ github.sha }} \
+            --platform managed \
+            --region asia-south1 \
+            --allow-unauthenticated \
+            --port 80
+      
+      - name: Remove temporary GCP credentials file
+        if: always()
+        run: |
+          rm -f "${{ steps.gcp-auth.outputs.credentials_file_path }}"
+          rm -f gha-creds-*.json
+      
+      - name: Check the Git Status
+        run: |
+          git status
+          git log -1
+      
